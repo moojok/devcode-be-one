@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <microhttpd.h>
+#include <sys/time.h>
 
 #define PORT 3030
 #define IP "0.0.0.0"
@@ -14,8 +15,23 @@ int handle_access(void *cls,
                   size_t *upload_data_size,
                   void **ptr)
 {
+    static struct timeval previous_time;
+    struct timeval current_time;
+    double rps;
+
     if (strcmp(url, "/hello") != 0) {
         return MHD_NO;
+    }
+
+    gettimeofday(&current_time, NULL);
+    if (previous_time.tv_sec == 0 && previous_time.tv_usec == 0) {
+        previous_time = current_time;
+    } else {
+        double elapsed_time = (current_time.tv_sec - previous_time.tv_sec) * 1000.0;
+        elapsed_time += (current_time.tv_usec - previous_time.tv_usec) / 1000.0;
+        rps = 1000.0 / elapsed_time;
+        printf("RPS: %.2f\n", rps);
+        previous_time = current_time;
     }
 
     struct MHD_Response *response;
