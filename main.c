@@ -50,19 +50,24 @@ int handle_access(void *cls,
 int main(int argc, char *argv[])
 {
     struct MHD_Daemon *daemon;
+    unsigned int flags = MHD_USE_SELECT_INTERNALLY;
 
-    daemon = MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION,
+    daemon = MHD_start_daemon(flags,
                               PORT,
                               NULL,
                               NULL,
                               &handle_access,
                               NULL,
+                              MHD_OPTION_CONNECTION_LIMIT, 1000,
+                              MHD_OPTION_THREAD_POOL_SIZE, 8,
                               MHD_OPTION_END);
     if (NULL == daemon) {
         return 1;
     }
 
-    getchar();
+    while(1) {
+        sleep(1);
+    }
 
     MHD_stop_daemon(daemon);
 
