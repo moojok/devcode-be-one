@@ -27,7 +27,7 @@ int handle_request(int client_socket) {
     // Parse the request to check if the url is "/hello"
     if (strstr(buffer, "GET /hello") != NULL) {
         char *http_response = malloc(strlen(response) + strlen("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: ") + 16);
-        sprintf(http_response, "HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", (int)strlen(response), response);
+        sprintf(http_response, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s", (int)strlen(response), response);
         send(client_socket, http_response, strlen(http_response), 0);
         free(http_response);
         return 1;
