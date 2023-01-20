@@ -1,6 +1,6 @@
 FROM frolvlad/alpine-gcc
-RUN apk add --no-cache libmicrohttpd-dev libc-dev
+RUN apk add --no-cache libc-dev
 WORKDIR /app
-COPY main.c /app/main.c
-RUN gcc -o server main.c -lmicrohttpd -lpthread
+COPY alt-native.c /app/main.c
+RUN gcc -o server main.c -lpthread
 CMD [ "/app/server" ]
