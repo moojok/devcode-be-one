@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <pcre.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -19,13 +20,21 @@ pthread_t rps_thread;
 
 int my_socket;
 
+pthread_t threadpool[NUM_THREADS];
+
 int handle_request(int client_socket) {
   char buffer[1024] = {0};
   int valread = read(client_socket, buffer, 1024);
   char *response = "{\"message\": \"Hello world\"}";
 
-  // Parse the request to check if the url is "/hello"
-  if (strstr(buffer, "GET /hello") != NULL) {
+  // Use regular expression library to check if the url is "/hello"
+  pcre *re;
+  const char *error;
+  int erroffset;
+  re = pcre_compile("GET /hello", 0, &error, &erroffset, NULL);
+  int rc = pcre_exec(re, NULL, buffer, strlen(buffer), 0, 0, NULL, 0);
+  pcre_free(re);
+  if (rc >= 0) {
     char *http_response = malloc(strlen(response) +
                                  strlen("HTTP/1.1 200 OK\nContent-Type: "
                                         "application/json\nContent-Length: ") +
@@ -34,7 +43,7 @@ int handle_request(int client_socket) {
             "HTTP/1.1 200 OK\r\nContent-Type: "
             "application/json\r\nContent-Length: %d\r\n\r\n%s",
             (int)strlen(response), response);
-    send(client_socket, http_response, strlen(http_response), 0);
+    write(client_socket, http_response, strlen(http_response));
     free(http_response);
     return 1;
   }
@@ -49,7 +58,6 @@ void *handle_connections(void *arg) {
   while (1) {
     client_socket =
         accept(my_socket, (struct sockaddr *)&client_address, &client_len);
-
     if (handle_request(client_socket)) {
       pthread_mutex_lock(&rps_mutex);
       rps++;
@@ -90,9 +98,10 @@ int main(int argc, char *argv[]) {
   bind(my_socket, (struct sockaddr *)&server_address, sizeof(server_address));
   listen(my_socket, NUM_CONNECTIONS);
 
+  // Use thread pool instead of creating new threads for each incoming
+  // connection
   for (int i = 0; i < NUM_THREADS; i++) {
-    pthread_t thread;
-    pthread_create(&thread, NULL, handle_connections, NULL);
+    pthread_create(&threadpool[i], NULL, handle_connections, NULL);
   }
 
   pthread_create(&rps_thread, NULL, calculate_rps, NULL);
@@ -100,8 +109,6 @@ int main(int argc, char *argv[]) {
   while (1) {
     sleep(1);
   }
-
-  close(my_socket);
 
   return 0;
 }
