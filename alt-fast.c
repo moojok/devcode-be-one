@@ -26,7 +26,6 @@ int handle_request(int client_socket) {
   int valread = read(client_socket, buffer, 1024);
   char *response = "{\"message\": \"Hello world\"}";
 
-  // Use strstr() to check if the url is "/hello"
   char *match = strstr(buffer, "GET /hello");
   if (match != NULL) {
     char *http_response = malloc(strlen(response) +
@@ -104,8 +103,6 @@ int main(int argc, char *argv[]) {
   bind(my_socket, (struct sockaddr *)&server_address, sizeof(server_address));
   listen(my_socket, NUM_CONNECTIONS);
 
-  // Use thread pool instead of creating new threads for each incoming
-  // connection
   for (int i = 0; i < NUM_THREADS; i++) {
     pthread_create(&threadpool[i], NULL, handle_connections, NULL);
   }
